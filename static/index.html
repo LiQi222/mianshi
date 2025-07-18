@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 简历面试问题生成器</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        .container { width: 100%; max-width: 800px; margin: 0 auto; background-color: #ffffff; padding: 20px 40px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08); box-sizing: border-box; }
+        header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        h1 { color: #2c3e50; font-weight: 700; }
+        h2 { color: #34495e; border-left: 4px solid #3498db; padding-left: 15px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #555; }
+        input[type="file"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s, box-shadow 0.3s; }
+        button { display: block; width: 100%; padding: 15px; background: linear-gradient(45deg, #3498db, #2980b9); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; box-shadow: none; transform: none; }
+        #results-container { margin-top: 30px; padding: 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
+        .spinner-container { text-align: center; padding: 40px 0; color: #555; font-weight: 500; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI 简历面试问题生成器</h1>
+            <p>上传简历和目标职位，AI 为您量身打造面试问题。</p>
+        </header>
+        <form id="resume-form">
+            <div class="form-group">
+                <label for="resume-file">1. 上传您的简历 (仅支持PDF格式)</label>
+                <input type="file" id="resume-file" name="resume" accept=".pdf" required>
+            </div>
+            <div class="form-group">
+                <label for="job-description">2. (可选) 粘贴目标岗位描述</label>
+                <textarea id="job-description" name="jd" rows="8" placeholder="将职位描述粘贴到这里，可以生成更具针对性的问题..."></textarea>
+            </div>
+            <button type="submit" id="submit-btn">✨ 生成面试问题</button>
+        </form>
+        <div id="loading" class="spinner-container" style="display: none;">
+            <div class="spinner"></div>
+            <p>AI 正在深度分析您的简历，请稍候...</p>
+        </div>
+        <div id="results-container" style="display: none;">
+            <h2>💡 AI 生成的面试问题</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('resume-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const loadingSpinner = document.getElementById('loading');
+            const resultsContainer = document.getElementById('results-container');
+            const resultsDiv = document.getElementById('results');
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const resumeFile = document.getElementById('resume-file').files[0];
+                const jobDescription = document.getElementById('job-description').value;
+                if (!resumeFile) { alert('请先上传您的简历文件。'); return; }
+                submitBtn.disabled = true;
+                submitBtn.innerText = "分析中...";
+                loadingSpinner.style.display = 'block';
+                resultsContainer.style.display = 'none';
+                const formData = new FormData();
+                formData.append('resume', resumeFile);
+                formData.append('jd', jobDescription);
+                try {
+                    // 请求地址无需修改，依然是相对路径
+                    const response = await fetch('/analyze', { method: 'POST', body: formData });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '服务器发生未知错误');
+                    }
+                    const data = await response.json();
+                    resultsDiv.innerHTML = marked.parse(data.questions);
+                    resultsContainer.style.display = 'block';
+                } catch (error) {
+                    resultsDiv.innerHTML = `<p style="color: #ea3535; font-weight: bold;">发生错误: ${error.message}</p><p>请检查您的Python后端服务是否已正确运行，并且API密钥已配置。</p>`;
+                    resultsContainer.style.display = 'block';
+                } finally {
+                    loadingSpinner.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "✨ 生成面试问题";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
