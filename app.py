@@ -5,8 +5,8 @@ import PyPDF2 as pdf
 import os
 
 # 初始化Flask应用，并指定静态文件夹
-app = Flask(__name__, static_folder='static', static_url_path='')
-CORS(app)  # 允许跨域请求
+app = Flask(__name__, static_folder='static')
+CORS(app) # 允许跨域请求
 
 # --- 配置 DeepSeek API 密钥 ---
 try:
@@ -17,18 +17,54 @@ try:
 except Exception as e:
     print(f"API密钥配置错误: {e}")
 
-
 # 新增的路由：用于提供网站主页
 @app.route('/')
 def serve_index():
     # 这个函数会从我们指定的 'static' 文件夹中寻找并返回 index.html 文件
     return send_from_directory(app.static_folder, 'index.html')
 
+# 新增的路由：处理对/analyze的请求
+@app.route('/analyze', methods=['POST'])
+def analyze_resume():
+    # 最终更新：为整个函数添加一个健壮的错误处理机制
+    try:
+        if 'resume' not in request.files:
+            return jsonify({"error": "没有找到简历文件"}), 400
+        
+        resume_file = request.files['resume']
+        job_description = request.form.get('jd', '')
+
+        if resume_file.filename == '':
+            return jsonify({"error": "未选择文件"}), 400
+        
+        if resume_file:
+            resume_text = extract_text_from_pdf(resume_file.stream)
+            if "读取PDF时出错" in resume_text:
+                return jsonify({"error": resume_text}), 500
+            
+            generated_questions = get_deepseek_response(resume_text, job_description)
+            
+            # 检查 get_deepseek_response 函数是否返回了它自己的错误信息
+            if "调用AI模型时出错" in generated_questions or "解析AI模型返回的数据时出错" in generated_questions:
+                 return jsonify({"error": generated_questions}), 500
+
+            # 如果一切正常，返回成功的结果
+            return jsonify({"questions": generated_questions})
+        
+        # 这是一个备用的错误情况
+        return jsonify({"error": "处理文件时发生未知错误"}), 500
+
+    except Exception as e:
+        # 这个 "安全网" 会捕获任何意想不到的错误
+        print(f"在 /analyze 端点发生严重错误: {e}")
+        # 并保证返回一个JSON，而不是一个HTML错误页面
+        return jsonify({"error": "服务器内部发生严重错误，请联系管理员查看后端日志。"}), 500
+
 
 def get_deepseek_response(resume_text, job_description):
     """调用 DeepSeek API 模型生成面试问题。"""
     url = "https://api.deepseek.com/chat/completions"
-
+    
     prompt_content = f"""
     请扮演一位资深的招聘经理或技术面试官。
     我将提供一份求职者的简历文本，以及可选的目标岗位描述。
@@ -77,7 +113,6 @@ def get_deepseek_response(resume_text, job_description):
         print(f"解析 DeepSeek API 响应时出错: {e}")
         return "解析AI模型返回的数据时出错。"
 
-
 def extract_text_from_pdf(pdf_file):
     """从PDF文件流中提取文本。"""
     try:
@@ -88,24 +123,6 @@ def extract_text_from_pdf(pdf_file):
         return text
     except Exception as e:
         return f"读取PDF时出错: {str(e)}"
-
-
-@app.route('/analyze', methods=['POST'])
-def analyze_resume():
-    if 'resume' not in request.files:
-        return jsonify({"error": "没有找到简历文件"}), 400
-    resume_file = request.files['resume']
-    job_description = request.form.get('jd', '')
-    if resume_file.filename == '':
-        return jsonify({"error": "未选择文件"}), 400
-    if resume_file:
-        resume_text = extract_text_from_pdf(resume_file.stream)
-        if "读取PDF时出错" in resume_text:
-            return jsonify({"error": resume_text}), 500
-        generated_questions = get_deepseek_response(resume_text, job_description)
-        return jsonify({"questions": generated_questions})
-    return jsonify({"error": "未知错误"}), 500
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
