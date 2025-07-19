@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import re # 引入正则表达式模块
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -25,7 +26,6 @@ def init_db():
     """初始化数据库，创建表"""
     with app.app_context():
         db = get_db()
-        # 确保 schema.sql 文件存在
         if os.path.exists('schema.sql'):
             with open('schema.sql', 'r') as f:
                 db.executescript(f.read())
@@ -74,8 +74,17 @@ def register():
     username = data.get('username')
     password = data.get('password')
 
+    # --- 新增的服务器端验证逻辑 ---
     if not username or not password:
         return jsonify({"error": "用户名和密码不能为空"}), 400
+    
+    # 用户名验证: 5-10位，只能是英文字母或数字
+    if not re.match(r'^[a-zA-Z0-9]{5,10}$', username):
+        return jsonify({"error": "用户名必须是5-10位的英文字母或数字"}), 400
+        
+    # 密码验证: 6-18位，必须包含英文和数字
+    if not re.match(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,18}$', password):
+        return jsonify({"error": "密码必须是6-18位，且同时包含英文和数字"}), 400
 
     db = get_db()
     if db.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone():
@@ -191,9 +200,6 @@ def extract_text_from_pdf(pdf_file):
         return "读取PDF时出错"
 
 # --- Main Execution ---
-# 最终修复：将数据库初始化直接放在这里
-# 因为 schema.sql 使用 "CREATE TABLE IF NOT EXISTS", 所以每次启动都运行是安全的
-# 这确保了无论是在本地还是在Render上，数据库表总是存在的
 init_db()
 
 if __name__ == '__main__':
