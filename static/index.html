@@ -192,32 +192,50 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const views = {
-                auth: document.getElementById('auth-view'),
-                app: document.getElementById('app-view'),
-                login: document.getElementById('login-form-container'),
-                register: document.getElementById('register-form-container'),
-                analyzer: document.getElementById('analyzer-view'),
-                history: document.getElementById('history-view')
-            };
+            // --- DOM Element Definitions ---
+            const authView = document.getElementById('auth-view');
+            const appView = document.getElementById('app-view');
+            const loginContainer = document.getElementById('login-form-container');
+            const registerContainer = document.getElementById('register-form-container');
+            const analyzerView = document.getElementById('analyzer-view');
+            const historyView = document.getElementById('history-view');
 
             const navButtons = {
                 analyzer: document.getElementById('nav-analyzer'),
                 history: document.getElementById('nav-history')
             };
 
-            const showView = (view) => {
-                Object.values(views).forEach(v => v.classList.add('hidden'));
-                if (view === views.app) {
-                    view.classList.remove('hidden');
-                    views.analyzer.classList.remove('hidden'); // 默认显示分析页
+            // --- View Management ---
+            const showMainView = (viewToShow) => {
+                authView.classList.add('hidden');
+                appView.classList.add('hidden');
+                viewToShow.classList.remove('hidden');
+            };
+
+            const showAuthForm = (formToShow) => {
+                loginContainer.classList.add('hidden');
+                registerContainer.classList.add('hidden');
+                formToShow.classList.remove('hidden');
+            };
+
+            const showAppPanel = (panelToShow) => {
+                analyzerView.classList.add('hidden');
+                historyView.classList.add('hidden');
+                panelToShow.classList.remove('hidden');
+
+                Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
+                if (panelToShow === analyzerView) {
+                    navButtons.analyzer.classList.add('active');
                 } else {
-                    view.classList.remove('hidden');
+                    navButtons.history.classList.add('active');
                 }
             };
             
-            const showError = (elId, msg) => { document.getElementById(elId).textContent = msg || ''; };
+            const showError = (elementId, message) => {
+                document.getElementById(elementId).textContent = message || '';
+            };
 
+            // --- Core Logic ---
             const checkAuth = async () => {
                 try {
                     const response = await fetch('/api/check_auth');
@@ -225,13 +243,16 @@
                     const data = await response.json();
                     if (data.is_authenticated) {
                         document.getElementById('user-avatar').textContent = data.username.charAt(0).toUpperCase();
-                        showView(views.app);
+                        showMainView(appView);
+                        showAppPanel(analyzerView);
                     } else {
-                        showView(views.auth);
+                        showMainView(authView);
+                        showAuthForm(loginContainer);
                     }
                 } catch (error) {
                     console.error("Auth check failed:", error);
-                    showView(views.auth);
+                    showMainView(authView);
+                    showAuthForm(loginContainer);
                 }
             };
 
@@ -271,14 +292,12 @@
 
             document.getElementById('show-register-link').addEventListener('click', (e) => {
                 e.preventDefault();
-                views.login.classList.add('hidden');
-                views.register.classList.remove('hidden');
+                showAuthForm(registerContainer);
             });
 
             document.getElementById('show-login-link').addEventListener('click', (e) => {
                 e.preventDefault();
-                views.register.classList.add('hidden');
-                views.login.classList.remove('hidden');
+                showAuthForm(loginContainer);
             });
             
             document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -293,8 +312,7 @@
                 const data = await response.json();
                 if (response.ok) {
                     alert('注册成功！请登录。');
-                    views.register.classList.add('hidden');
-                    views.login.classList.remove('hidden');
+                    showAuthForm(loginContainer);
                     showError('register-error', '');
                 } else {
                     showError('register-error', data.error);
@@ -324,27 +342,16 @@
                 checkAuth();
             });
             
-            navButtons.analyzer.addEventListener('click', () => {
-                views.history.classList.add('hidden');
-                views.analyzer.classList.remove('hidden');
-                navButtons.history.classList.remove('active');
-                navButtons.analyzer.classList.add('active');
-            });
-
+            navButtons.analyzer.addEventListener('click', () => showAppPanel(analyzerView));
             navButtons.history.addEventListener('click', () => {
-                views.analyzer.classList.add('hidden');
-                views.history.classList.remove('hidden');
-                navButtons.analyzer.classList.remove('active');
-                navButtons.history.classList.add('active');
+                showAppPanel(historyView);
                 loadHistory();
             });
             
-            // Accordion for history items
             document.getElementById('history-list').addEventListener('click', (e) => {
                 const header = e.target.closest('.history-header');
                 if (header) {
-                    const item = header.parentElement;
-                    item.classList.toggle('active');
+                    header.parentElement.classList.toggle('active');
                 }
             });
 
