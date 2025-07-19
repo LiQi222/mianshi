@@ -6,177 +6,48 @@
     <title>AI 简历面试问题生成器</title>
     <style>
         :root {
-            --primary-color: #4A90E2;
-            --primary-light: #eaf2fc;
-            --secondary-color: #50E3C2;
-            --background-color: #f7f9fc;
-            --text-color: #4a4a4a;
-            --light-text-color: #9b9b9b;
-            --container-bg: #ffffff;
-            --border-color: #e6e6e6;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --primary-color: #4A90E2; --primary-light: #eaf2fc; --secondary-color: #50E3C2;
+            --background-color: #f7f9fc; --text-color: #4a4a4a; --light-text-color: #9b9b9b;
+            --container-bg: #ffffff; --border-color: #e6e6e6; --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
         }
-        body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.7;
-            margin: 0;
-        }
+        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background-color: var(--background-color); color: var(--text-color); line-height: 1.7; margin: 0; }
         .hidden { display: none !important; }
         
-        /* 认证页面样式 */
-        .auth-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .auth-container {
-            width: 100%;
-            max-width: 400px;
-            background-color: var(--container-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 40px;
-            box-sizing: border-box;
-        }
-        .auth-header { text-align: center; margin-bottom: 30px; }
-        .auth-header h1 { font-size: 28px; color: var(--primary-color); }
-        .auth-form input { width: 100%; padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; }
-        .auth-form button { width: 100%; padding: 14px; background: var(--primary-color); color: #fff; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
-        .auth-form button:hover { background-color: #357ABD; }
-        .auth-form button:active { transform: scale(0.98); }
-        .auth-switch { text-align: center; margin-top: 20px; color: var(--light-text-color); }
-        .auth-link { color: var(--primary-color); text-decoration: none; cursor: pointer; font-weight: 500; }
-        .auth-link:hover { text-decoration: underline; }
-        .error-message { color: #D0021B; text-align: center; margin-bottom: 15px; font-size: 14px; min-height: 20px;}
-        .validation-hint { font-size: 12px; color: var(--light-text-color); margin-top: -10px; margin-bottom: 15px; text-align: left; padding-left: 5px; }
-
         /* 主应用样式 */
         #app-view { padding: 20px; }
-        #app-header {
-            max-width: 1200px;
-            margin: 0 auto 30px auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 30px;
-            background-color: var(--container-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
+        #app-header { max-width: 1200px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; background-color: var(--container-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); }
         .logo { font-size: 24px; font-weight: bold; color: var(--primary-color); }
-        .main-nav button {
-            background: none;
-            border: 1px solid transparent;
-            font-size: 16px;
-            padding: 8px 16px;
-            margin: 0 5px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .main-nav button.active {
-            background-color: var(--primary-light);
-            color: var(--primary-color);
-            font-weight: 500;
-        }
+        .main-nav button { background: none; border: 1px solid transparent; font-size: 16px; padding: 8px 16px; margin: 0 5px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .main-nav button.active { background-color: var(--primary-light); color: var(--primary-color); font-weight: 500; }
         #user-profile { display: flex; align-items: center; position: relative; }
         #user-avatar { width: 40px; height: 40px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; }
-        #logout-btn { 
-            display: none; 
-            position: absolute; 
-            top: 50px; 
-            right: 0; 
-            background-color: var(--container-bg); 
-            border: 1px solid var(--border-color); 
-            color: var(--text-color); 
-            padding: 10px 20px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            white-space: nowrap; 
-            z-index: 10; 
-        }
+        #logout-btn { display: none; position: absolute; top: 50px; right: 0; background-color: var(--container-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); white-space: nowrap; z-index: 10; }
         #logout-btn.show { display: block; }
         
         .page-content { max-width: 1200px; margin: 0 auto; }
         .panel { background: var(--container-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
         .panel h2 { margin-top: 0; font-size: 22px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
         
-        /* 分析器页面 */
         #analyzer-view .form-group label { font-weight: 500; }
         #analyzer-view button[type="submit"] { margin-top: 10px; }
         #results-container { margin-top: 20px; padding: 20px; background-color: var(--primary-light); border-radius: 8px; }
+        .download-section { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
 
-        /* 历史记录页面 */
         #history-list { list-style-type: none; padding: 0; }
         .history-item { margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background-color: #fff;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .history-header:hover { background-color: #f9f9f9; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #fff; cursor: pointer; }
         .history-item.active .history-header { background-color: var(--primary-light); }
         .history-header .timestamp { font-size: 14px; color: var(--light-text-color); }
         .history-header .toggle-icon { font-size: 24px; font-weight: bold; transition: transform 0.3s; }
         .history-item.active .toggle-icon { transform: rotate(45deg); }
-        .history-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
-            padding: 0 20px;
-            background: #fafcff;
-        }
-        .history-item.active .history-content {
-            max-height: 400px; /* 关键修复：设置一个固定的最大高度 */
-            overflow-y: auto; /* 关键修复：允许垂直滚动 */
-            padding: 20px;
-        }
-        .history-content p { margin: 0 0 10px 0; }
-        .history-content ul { padding-left: 20px; }
+        .history-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; padding: 0 20px; background: #fafcff; }
+        .history-item.active .history-content { max-height: 400px; overflow-y: auto; padding: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- 认证视图 -->
-    <div id="auth-view" class="auth-wrapper">
-        <div class="auth-container">
-            <div id="login-form-container">
-                <div class="auth-header"><h1>欢迎回来</h1><p>登录以继续您的AI面试准备</p></div>
-                <form id="login-form" class="auth-form">
-                    <div id="login-error" class="error-message"></div>
-                    <input type="text" id="login-username" placeholder="用户名" required>
-                    <input type="password" id="login-password" placeholder="密码" required>
-                    <button type="submit">登 录</button>
-                </form>
-                <div class="auth-switch">还没有账户？ <a href="#" id="show-register-link" class="auth-link">立即注册</a></div>
-            </div>
-            <div id="register-form-container" class="hidden">
-                <div class="auth-header"><h1>创建新账户</h1><p>开启您的个性化面试之旅</p></div>
-                <form id="register-form" class="auth-form">
-                    <div id="register-error" class="error-message"></div>
-                    <input type="text" id="register-username" placeholder="用户名" required>
-                    <div class="validation-hint">5-10位，仅限英文字母和数字</div>
-                    <input type="password" id="register-password" placeholder="密码" required>
-                    <div class="validation-hint">6-18位，必须包含英文和数字</div>
-                    <button type="submit">注 册</button>
-                </form>
-                <div class="auth-switch">已有账户？ <a href="#" id="show-login-link" class="auth-link">返回登录</a></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 主应用视图 -->
-    <div id="app-view" class="hidden">
+    <div id="app-view">
         <header id="app-header">
             <div class="logo">AI 面试官</div>
             <nav class="main-nav">
@@ -198,7 +69,13 @@
                     <button type="submit" id="submit-btn">✨ 开始分析</button>
                 </form>
                 <div id="loading" class="hidden" style="text-align:center; padding: 40px 0;">AI分析中...</div>
-                <div id="results-container" class="hidden"><h3>💡 AI 生成的面试问题</h3><div id="results"></div></div>
+                <div id="results-container" class="hidden">
+                    <h3>💡 AI 生成的面试问题</h3>
+                    <div id="results"></div>
+                    <div class="download-section">
+                        <button id="download-btn">下载为 Word 文档</button>
+                    </div>
+                </div>
             </div>
             <div id="history-view" class="panel hidden">
                 <h2>您的分析记录</h2>
@@ -210,188 +87,69 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Element Definitions ---
-            const authView = document.getElementById('auth-view');
-            const appView = document.getElementById('app-view');
-            const loginContainer = document.getElementById('login-form-container');
-            const registerContainer = document.getElementById('register-form-container');
-            const analyzerView = document.getElementById('analyzer-view');
-            const historyView = document.getElementById('history-view');
+            let questionsContent = "";
             const userAvatar = document.getElementById('user-avatar');
             const logoutBtn = document.getElementById('logout-btn');
 
-            const navButtons = {
-                analyzer: document.getElementById('nav-analyzer'),
-                history: document.getElementById('nav-history')
-            };
-
-            // --- View Management ---
-            const showMainView = (viewToShow) => {
-                authView.classList.add('hidden');
-                appView.classList.add('hidden');
-                viewToShow.classList.remove('hidden');
-            };
-
-            const showAuthForm = (formToShow) => {
-                loginContainer.classList.add('hidden');
-                registerContainer.classList.add('hidden');
-                formToShow.classList.remove('hidden');
+            const checkAuth = async () => {
+                const response = await fetch('/api/check_auth');
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await response.json();
+                if (!data.is_authenticated) {
+                    window.location.href = '/login';
+                } else {
+                    userAvatar.textContent = data.username.charAt(0).toUpperCase();
+                }
             };
 
             const showAppPanel = (panelToShow) => {
-                analyzerView.classList.add('hidden');
-                historyView.classList.add('hidden');
+                document.getElementById('analyzer-view').classList.add('hidden');
+                document.getElementById('history-view').classList.add('hidden');
                 panelToShow.classList.remove('hidden');
 
-                Object.values(navButtons).forEach(btn => btn.classList.remove('active'));
-                if (panelToShow === analyzerView) {
-                    navButtons.analyzer.classList.add('active');
+                document.getElementById('nav-analyzer').classList.remove('active');
+                document.getElementById('nav-history').classList.remove('active');
+                if (panelToShow === document.getElementById('analyzer-view')) {
+                    document.getElementById('nav-analyzer').classList.add('active');
                 } else {
-                    navButtons.history.classList.add('active');
+                    document.getElementById('nav-history').classList.add('active');
                 }
             };
             
-            const showError = (elementId, message) => {
-                document.getElementById(elementId).textContent = message || '';
-            };
-
-            // 关键修复：重置分析器状态的函数
-            const resetAnalyzerState = () => {
-                document.getElementById('resume-form').reset();
-                document.getElementById('results-container').classList.add('hidden');
-                document.getElementById('results').innerHTML = '';
-            };
-
-            // --- Core Logic ---
-            const checkAuth = async () => {
-                try {
-                    const response = await fetch('/api/check_auth');
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    const data = await response.json();
-                    if (data.is_authenticated) {
-                        document.getElementById('user-avatar').textContent = data.username.charAt(0).toUpperCase();
-                        showMainView(appView);
-                        showAppPanel(analyzerView);
-                    } else {
-                        showMainView(authView);
-                        showAuthForm(loginContainer);
-                    }
-                } catch (error) {
-                    console.error("Auth check failed:", error);
-                    showMainView(authView);
-                    showAuthForm(loginContainer);
-                }
-            };
-
-            const loadHistory = async () => {
-                const historyList = document.getElementById('history-list');
-                historyList.innerHTML = '<li>加载中...</li>';
-                try {
-                    const response = await fetch('/api/history');
-                    if (!response.ok) throw new Error('Failed to fetch history');
-                    const data = await response.json();
-                    historyList.innerHTML = '';
-                    if (data.length === 0) {
-                        historyList.innerHTML = '<li>暂无分析记录</li>';
-                    } else {
-                        data.forEach(item => {
-                            const li = document.createElement('li');
-                            li.className = 'history-item';
-                            const timestamp = new Date(item.timestamp).toLocaleString('zh-CN');
-                            li.innerHTML = `
-                                <div class="history-header">
-                                    <span class="timestamp">${timestamp}</span>
-                                    <span class="toggle-icon">+</span>
-                                </div>
-                                <div class="history-content">
-                                    ${marked.parse(item.questions)}
-                                </div>`;
-                            historyList.appendChild(li);
-                        });
-                    }
-                } catch (error) {
-                    historyList.innerHTML = `<li>加载历史记录失败: ${error.message}</li>`;
-                }
-            };
-
-            // --- Event Listeners ---
             checkAuth();
 
-            document.getElementById('show-register-link').addEventListener('click', (e) => {
-                e.preventDefault();
-                showAuthForm(registerContainer);
-            });
-
-            document.getElementById('show-login-link').addEventListener('click', (e) => {
-                e.preventDefault();
-                showAuthForm(loginContainer);
-            });
-            
-            document.getElementById('register-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('register-username').value;
-                const password = document.getElementById('register-password').value;
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+            document.getElementById('nav-analyzer').addEventListener('click', () => showAppPanel(document.getElementById('analyzer-view')));
+            document.getElementById('nav-history').addEventListener('click', async () => {
+                showAppPanel(document.getElementById('history-view'));
+                const historyList = document.getElementById('history-list');
+                historyList.innerHTML = '<li>加载中...</li>';
+                const response = await fetch('/api/history');
                 const data = await response.json();
-                if (response.ok) {
-                    alert('注册成功！请登录。');
-                    showAuthForm(loginContainer);
-                    showError('register-error', '');
-                } else {
-                    showError('register-error', data.error);
-                }
-            });
-
-            document.getElementById('login-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const username = document.getElementById('login-username').value;
-                const password = document.getElementById('login-password').value;
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    checkAuth();
-                    showError('login-error', '');
-                } else {
-                    showError('login-error', data.error);
-                }
+                historyList.innerHTML = data.length ? data.map(item => `<li class="history-item"><div class="history-header"><span class="timestamp">${new Date(item.timestamp).toLocaleString('zh-CN')}</span><span class="toggle-icon">+</span></div><div class="history-content">${marked.parse(item.questions)}</div></li>`).join('') : '<li>暂无分析记录</li>';
             });
 
             userAvatar.addEventListener('click', (e) => {
                 e.stopPropagation();
                 logoutBtn.classList.toggle('show');
             });
-
+            
             logoutBtn.addEventListener('click', async () => {
                 await fetch('/api/logout', { method: 'POST' });
-                resetAnalyzerState(); // 关键修复：退出时重置状态
-                checkAuth();
+                window.location.href = '/login';
             });
 
             document.addEventListener('click', (e) => {
-                if (!userAvatar.contains(e.target) && !logoutBtn.contains(e.target)) {
+                if (!e.target.closest('#user-profile')) {
                     logoutBtn.classList.remove('show');
                 }
             });
             
-            navButtons.analyzer.addEventListener('click', () => showAppPanel(analyzerView));
-            navButtons.history.addEventListener('click', () => {
-                showAppPanel(historyView);
-                loadHistory();
-            });
-            
             document.getElementById('history-list').addEventListener('click', (e) => {
                 const header = e.target.closest('.history-header');
-                if (header) {
-                    header.parentElement.classList.toggle('active');
-                }
+                if (header) header.parentElement.classList.toggle('active');
             });
 
             document.getElementById('resume-form').addEventListener('submit', async (e) => {
@@ -407,18 +165,35 @@
                 try {
                     const response = await fetch('/api/analyze', { method: 'POST', body: formData });
                     const data = await response.json();
-                    
                     resultsContainer.classList.remove('hidden');
-
                     if (data.error) {
                         resultsDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
                     } else {
-                        resultsDiv.innerHTML = marked.parse(data.questions);
+                        questionsContent = data.questions;
+                        resultsDiv.innerHTML = marked.parse(questionsContent);
                     }
                 } catch (error) {
                      resultsDiv.innerHTML = `<p style="color:red;">请求失败: ${error.message}</p>`;
                 } finally {
                     loading.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('download-btn').addEventListener('click', async () => {
+                if (!questionsContent) { alert('请先生成问题后再下载。'); return; }
+                const response = await fetch('/api/download_word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: questionsContent }) });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '面试问题.docx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                } else {
+                    alert('下载失败，请稍后再试。');
                 }
             });
         });
