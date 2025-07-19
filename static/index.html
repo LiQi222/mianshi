@@ -14,35 +14,39 @@
         body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background-color: var(--background-color); color: var(--text-color); line-height: 1.7; margin: 0; }
         .hidden { display: none !important; }
         
+        /* 弹窗样式 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #fff; padding: 30px; border-radius: var(--border-radius); max-width: 400px; width: 90%; }
+        .modal-close-btn { float: right; background: none; border: none; font-size: 24px; cursor: pointer; }
+        .auth-header { text-align: center; margin-bottom: 20px; }
+        .auth-header h1 { font-size: 24px; color: var(--primary-color); }
+        .auth-form input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; }
+        .auth-form button { width: 100%; padding: 12px; background: var(--primary-color); color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .error-message { color: #D0021B; text-align: center; margin-bottom: 15px; font-size: 14px; min-height: 20px;}
+        .validation-hint { font-size: 12px; color: var(--light-text-color); margin-top: -10px; margin-bottom: 15px; }
+        .terms { margin-top: 15px; font-size: 13px; color: var(--light-text-color); }
+        .terms input { margin-right: 5px; }
+        .auth-link { color: var(--primary-color); text-decoration: none; }
+
         /* 主应用样式 */
         #app-view { padding: 20px; }
         #app-header { max-width: 1200px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; background-color: var(--container-bg); border-radius: var(--border-radius); box-shadow: var(--shadow); }
         .logo { font-size: 24px; font-weight: bold; color: var(--primary-color); }
-        .main-nav button { background: none; border: 1px solid transparent; font-size: 16px; padding: 8px 16px; margin: 0 5px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
-        .main-nav button.active { background-color: var(--primary-light); color: var(--primary-color); font-weight: 500; }
+        .header-nav button { background: none; border: 1px solid var(--border-color); font-size: 16px; padding: 8px 16px; margin: 0 5px; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .header-nav button:hover { background-color: var(--primary-light); color: var(--primary-color); }
         #user-profile { display: flex; align-items: center; position: relative; }
         #user-avatar { width: 40px; height: 40px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; }
         #logout-btn { display: none; position: absolute; top: 50px; right: 0; background-color: var(--container-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); white-space: nowrap; z-index: 10; }
         #logout-btn.show { display: block; }
         
-        .page-content { max-width: 1200px; margin: 0 auto; }
+        .page-content { max-width: 800px; margin: 0 auto; }
         .panel { background: var(--container-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
         .panel h2 { margin-top: 0; font-size: 22px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
         
-        #analyzer-view .form-group label { font-weight: 500; }
-        #analyzer-view button[type="submit"] { margin-top: 10px; }
         #results-container { margin-top: 20px; padding: 20px; background-color: var(--primary-light); border-radius: 8px; }
         .download-section { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
-
-        #history-list { list-style-type: none; padding: 0; }
-        .history-item { margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: #fff; cursor: pointer; }
-        .history-item.active .history-header { background-color: var(--primary-light); }
-        .history-header .timestamp { font-size: 14px; color: var(--light-text-color); }
-        .history-header .toggle-icon { font-size: 24px; font-weight: bold; transition: transform 0.3s; }
-        .history-item.active .toggle-icon { transform: rotate(45deg); }
-        .history-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; padding: 0 20px; background: #fafcff; }
-        .history-item.active .history-content { max-height: 400px; overflow-y: auto; padding: 20px; }
+        .download-section button { max-width: 300px; }
+        .download-section p { font-size: 14px; color: var(--light-text-color); }
     </style>
 </head>
 <body>
@@ -50,13 +54,18 @@
     <div id="app-view">
         <header id="app-header">
             <div class="logo">AI 面试官</div>
-            <nav class="main-nav">
-                <button id="nav-analyzer" class="active">问题分析</button>
-                <button id="nav-history">分析记录</button>
-            </nav>
-            <div id="user-profile">
-                <div id="user-avatar"></div>
-                <button id="logout-btn">退出登录</button>
+            <div id="user-controls">
+                <div id="guest-nav" class="header-nav">
+                    <button id="show-login-btn">登录</button>
+                    <button id="show-register-btn">注册</button>
+                </div>
+                <div id="user-nav" class="header-nav hidden">
+                    <button id="nav-history">分析记录</button>
+                    <div id="user-profile">
+                        <div id="user-avatar"></div>
+                        <button id="logout-btn">退出登录</button>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -74,82 +83,108 @@
                     <div id="results"></div>
                     <div class="download-section">
                         <button id="download-btn">下载为 Word 文档</button>
+                        <p id="download-hint">登录后即可下载并永久保存分析记录</p>
                     </div>
                 </div>
             </div>
-            <div id="history-view" class="panel hidden">
-                <h2>您的分析记录</h2>
-                <ul id="history-list"></ul>
-            </div>
         </main>
+    </div>
+
+    <div id="modal-container" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+            <div id="modal-body"></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let questionsContent = "";
-            const userAvatar = document.getElementById('user-avatar');
-            const logoutBtn = document.getElementById('logout-btn');
+            let isAuthenticated = false;
 
             const checkAuth = async () => {
                 const response = await fetch('/api/check_auth');
-                if (!response.ok) {
-                    window.location.href = '/login';
-                    return;
-                }
                 const data = await response.json();
-                if (!data.is_authenticated) {
-                    window.location.href = '/login';
-                } else {
-                    userAvatar.textContent = data.username.charAt(0).toUpperCase();
+                isAuthenticated = data.is_authenticated;
+                updateUIForAuthState();
+                if (isAuthenticated) {
+                    document.getElementById('user-avatar').textContent = data.username.charAt(0).toUpperCase();
                 }
             };
 
-            const showAppPanel = (panelToShow) => {
-                document.getElementById('analyzer-view').classList.add('hidden');
-                document.getElementById('history-view').classList.add('hidden');
-                panelToShow.classList.remove('hidden');
-
-                document.getElementById('nav-analyzer').classList.remove('active');
-                document.getElementById('nav-history').classList.remove('active');
-                if (panelToShow === document.getElementById('analyzer-view')) {
-                    document.getElementById('nav-analyzer').classList.add('active');
-                } else {
-                    document.getElementById('nav-history').classList.add('active');
-                }
+            const updateUIForAuthState = () => {
+                document.getElementById('guest-nav').classList.toggle('hidden', isAuthenticated);
+                document.getElementById('user-nav').classList.toggle('hidden', !isAuthenticated);
+                document.getElementById('download-hint').classList.toggle('hidden', isAuthenticated);
             };
+
+            const showModal = (type) => {
+                const modalBody = document.getElementById('modal-body');
+                let content = '';
+                if (type === 'login') {
+                    content = `<div class="auth-header"><h1>登录</h1></div><form id="login-form" class="auth-form"><div id="login-error" class="error-message"></div><input type="text" id="login-username" placeholder="用户名" required><input type="password" id="login-password" placeholder="密码" required><button type="submit">登 录</button></form>`;
+                } else if (type === 'register') {
+                    content = `<div class="auth-header"><h1>注册</h1></div><form id="register-form" class="auth-form"><div id="register-error" class="error-message"></div><input type="text" id="register-username" placeholder="用户名" required><div class="validation-hint">5-10位，字母或数字</div><input type="password" id="register-password" placeholder="密码" required><div class="validation-hint">6-18位，字母和数字组合</div><div class="terms"><input type="checkbox" id="terms-agree" required> 我已阅读并同意 <a href="/agreement" target="_blank" class="auth-link">用户协议</a> 和 <a href="/privacy" target="_blank" class="auth-link">隐私政策</a></div><button type="submit" id="register-submit-btn" disabled>注 册</button></form>`;
+                } else if (type === 'history') {
+                    content = `<h2>分析记录</h2><ul id="history-list" style="max-height: 60vh; overflow-y: auto;"><li>加载中...</li></ul>`;
+                }
+                modalBody.innerHTML = content;
+                document.getElementById('modal-container').classList.remove('hidden');
+            };
+
+            const closeModal = () => document.getElementById('modal-container').classList.add('hidden');
             
             checkAuth();
 
-            document.getElementById('nav-analyzer').addEventListener('click', () => showAppPanel(document.getElementById('analyzer-view')));
+            document.getElementById('show-login-btn').addEventListener('click', () => showModal('login'));
+            document.getElementById('show-register-btn').addEventListener('click', () => showModal('register'));
             document.getElementById('nav-history').addEventListener('click', async () => {
-                showAppPanel(document.getElementById('history-view'));
+                if (!isAuthenticated) { showModal('login'); return; }
+                showModal('history');
                 const historyList = document.getElementById('history-list');
-                historyList.innerHTML = '<li>加载中...</li>';
                 const response = await fetch('/api/history');
                 const data = await response.json();
-                historyList.innerHTML = data.length ? data.map(item => `<li class="history-item"><div class="history-header"><span class="timestamp">${new Date(item.timestamp).toLocaleString('zh-CN')}</span><span class="toggle-icon">+</span></div><div class="history-content">${marked.parse(item.questions)}</div></li>`).join('') : '<li>暂无分析记录</li>';
+                historyList.innerHTML = data.length ? data.map(item => `<li><strong>${new Date(item.timestamp).toLocaleString()}</strong><div>${marked.parse(item.questions)}</div></li>`).join('') : '<li>暂无记录</li>';
+            });
+            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+
+            document.getElementById('modal-container').addEventListener('click', (e) => {
+                if (e.target.id === 'modal-container') closeModal();
+                if (e.target.id === 'terms-agree') { document.getElementById('register-submit-btn').disabled = !e.target.checked; }
             });
 
-            userAvatar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                logoutBtn.classList.toggle('show');
+            document.getElementById('modal-body').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (e.target.id === 'login-form') {
+                    const username = e.target.querySelector('#login-username').value;
+                    const password = e.target.querySelector('#login-password').value;
+                    const response = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+                    const data = await response.json();
+                    if (response.ok) { closeModal(); checkAuth(); } else { document.getElementById('login-error').textContent = data.error; }
+                } else if (e.target.id === 'register-form') {
+                    const username = e.target.querySelector('#register-username').value;
+                    const password = e.target.querySelector('#register-password').value;
+                    const response = await fetch('/api/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+                    const data = await response.json();
+                    if (response.ok) { alert('注册成功！'); showModal('login'); } else { document.getElementById('register-error').textContent = data.error; }
+                }
             });
-            
-            logoutBtn.addEventListener('click', async () => {
+
+            document.getElementById('user-avatar').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('logout-btn').classList.toggle('show');
+            });
+
+            document.getElementById('logout-btn').addEventListener('click', async () => {
                 await fetch('/api/logout', { method: 'POST' });
-                window.location.href = '/login';
+                checkAuth();
             });
 
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('#user-profile')) {
-                    logoutBtn.classList.remove('show');
+                    document.getElementById('logout-btn').classList.remove('show');
                 }
-            });
-            
-            document.getElementById('history-list').addEventListener('click', (e) => {
-                const header = e.target.closest('.history-header');
-                if (header) header.parentElement.classList.toggle('active');
             });
 
             document.getElementById('resume-form').addEventListener('submit', async (e) => {
@@ -160,6 +195,7 @@
                 
                 loading.classList.remove('hidden');
                 resultsContainer.classList.add('hidden');
+                questionsContent = "";
 
                 const formData = new FormData(e.target);
                 try {
@@ -180,12 +216,24 @@
             });
 
             document.getElementById('download-btn').addEventListener('click', async () => {
-                if (!questionsContent) { alert('请先生成问题后再下载。'); return; }
-                const response = await fetch('/api/download_word', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: questionsContent }) });
+                if (!isAuthenticated) {
+                    showModal('login');
+                    return;
+                }
+                if (!questionsContent) {
+                    alert('请先生成问题后再下载。');
+                    return;
+                }
+                const response = await fetch('/api/download_word', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: questionsContent })
+                });
                 if (response.ok) {
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = url;
                     a.download = '面试问题.docx';
                     document.body.appendChild(a);
