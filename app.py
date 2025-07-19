@@ -1,32 +1,132 @@
+import os
+import sqlite3
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import PyPDF2 as pdf
-import os
 
-# 初始化Flask应用，并指定静态文件夹
+# --- App & DB Setup ---
 app = Flask(__name__, static_folder='static')
-CORS(app) # 允许跨域请求
+app.config['SECRET_KEY'] = os.urandom(24) # 用于保护会话的密钥
+CORS(app)
 
-# --- 配置 DeepSeek API 密钥 ---
+# 数据库文件路径
+DATABASE = 'database.db'
+
+def get_db():
+    """连接到数据库"""
+    db = sqlite3.connect(DATABASE)
+    db.row_factory = sqlite3.Row
+    return db
+
+def init_db():
+    """初始化数据库，创建表"""
+    with app.app_context():
+        db = get_db()
+        with open('schema.sql', 'r') as f:
+            db.executescript(f.read())
+        db.commit()
+
+# --- User Authentication Setup (Flask-Login) ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+class User(UserMixin):
+    """用户模型"""
+    def __init__(self, id, username):
+        self.id = id
+        self.username = username
+
+@login_manager.user_loader
+def load_user(user_id):
+    """加载用户"""
+    db = get_db()
+    user_row = db.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    db.close()
+    if user_row:
+        return User(id=user_row['id'], username=user_row['username'])
+    return None
+
+# --- API Key Setup ---
 try:
-    # 从环境变量中读取密钥
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         raise ValueError("未找到 DEEPSEEK_API_KEY 环境变量")
 except Exception as e:
     print(f"API密钥配置错误: {e}")
 
-# 新增的路由：用于提供网站主页
+# --- Frontend & Static Routes ---
 @app.route('/')
 def serve_index():
-    # 这个函数会从我们指定的 'static' 文件夹中寻找并返回 index.html 文件
     return send_from_directory(app.static_folder, 'index.html')
 
-# 新增的路由：处理对/analyze的请求
-@app.route('/analyze', methods=['POST'])
+# --- API Routes ---
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "用户名和密码不能为空"}), 400
+
+    db = get_db()
+    if db.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone():
+        db.close()
+        return jsonify({"error": "用户名已存在"}), 409
+
+    hashed_password = generate_password_hash(password)
+    db.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_password))
+    db.commit()
+    db.close()
+    return jsonify({"success": "注册成功"}), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    db = get_db()
+    user_row = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+    db.close()
+
+    if user_row and check_password_hash(user_row['password'], password):
+        user = User(id=user_row['id'], username=user_row['username'])
+        login_user(user)
+        return jsonify({"success": "登录成功", "username": user.username})
+    
+    return jsonify({"error": "用户名或密码错误"}), 401
+
+@app.route('/api/logout', methods=['POST'])
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"success": "已退出登录"})
+
+@app.route('/api/check_auth')
+def check_auth():
+    if current_user.is_authenticated:
+        return jsonify({"is_authenticated": True, "username": current_user.username})
+    return jsonify({"is_authenticated": False})
+
+@app.route('/api/history')
+@login_required
+def get_history():
+    db = get_db()
+    history_rows = db.execute(
+        'SELECT questions, timestamp FROM history WHERE user_id = ? ORDER BY timestamp DESC', 
+        (current_user.id,)
+    ).fetchall()
+    db.close()
+    history = [{"questions": row['questions'], "timestamp": row['timestamp']} for row in history_rows]
+    return jsonify(history)
+
+@app.route('/api/analyze', methods=['POST'])
+@login_required
 def analyze_resume():
-    # 最终更新：为整个函数添加一个健壮的错误处理机制
     try:
         if 'resume' not in request.files:
             return jsonify({"error": "没有找到简历文件"}), 400
@@ -37,92 +137,57 @@ def analyze_resume():
         if resume_file.filename == '':
             return jsonify({"error": "未选择文件"}), 400
         
-        if resume_file:
-            resume_text = extract_text_from_pdf(resume_file.stream)
-            if "读取PDF时出错" in resume_text:
-                return jsonify({"error": resume_text}), 500
-            
-            generated_questions = get_deepseek_response(resume_text, job_description)
-            
-            # 检查 get_deepseek_response 函数是否返回了它自己的错误信息
-            if "调用AI模型时出错" in generated_questions or "解析AI模型返回的数据时出错" in generated_questions:
-                 return jsonify({"error": generated_questions}), 500
-
-            # 如果一切正常，返回成功的结果
-            return jsonify({"questions": generated_questions})
+        resume_text = extract_text_from_pdf(resume_file.stream)
+        if "读取PDF时出错" in resume_text:
+            return jsonify({"error": resume_text}), 500
         
-        # 这是一个备用的错误情况
-        return jsonify({"error": "处理文件时发生未知错误"}), 500
+        generated_questions = get_deepseek_response(resume_text, job_description)
+        
+        if "调用AI模型时出错" in generated_questions or "解析AI模型返回的数据时出错" in generated_questions:
+             return jsonify({"error": generated_questions}), 500
+
+        # 保存到历史记录
+        db = get_db()
+        db.execute('INSERT INTO history (user_id, questions) VALUES (?, ?)', (current_user.id, generated_questions))
+        db.commit()
+        db.close()
+
+        return jsonify({"questions": generated_questions})
 
     except Exception as e:
-        # 这个 "安全网" 会捕获任何意想不到的错误
         print(f"在 /analyze 端点发生严重错误: {e}")
-        # 并保证返回一个JSON，而不是一个HTML错误页面
-        return jsonify({"error": "服务器内部发生严重错误，请联系管理员查看后端日志。"}), 500
+        return jsonify({"error": "服务器内部发生严重错误"}), 500
 
-
+# --- Helper Functions ---
 def get_deepseek_response(resume_text, job_description):
     """调用 DeepSeek API 模型生成面试问题。"""
     url = "https://api.deepseek.com/chat/completions"
-    
-    prompt_content = f"""
-    请扮演一位资深的招聘经理或技术面试官。
-    我将提供一份求职者的简历文本，以及可选的目标岗位描述。
-    你的任务是：
-    1.  仔细分析简历中的每一部分，包括工作经历、项目经验、技能和教育背景。
-    2.  结合目标岗位描述（如果提供的话），生成一系列有深度、有针对性的面试问题。
-    3.  问题应该覆盖以下几个方面：
-        - 针对具体工作职责和成就的深挖问题。
-        - 考察技术或专业技能实际应用的问题。
-        - 行为面试问题（Behavioral Questions）。
-        - 如果简历中存在潜在的疑点，也需要提出相关问题。
-    4.  请以清晰、有条理的格式输出，例如使用Markdown标题和列表。
-
-    ---
-    **目标岗位描述:**
-    {job_description if job_description else "未提供"}
-
-    ---
-    **简历文本:**
-    {resume_text}
-    """
-
-    payload = {
-        "model": "deepseek-chat",
-        "messages": [
-            {"role": "system", "content": "你是一位资深的招聘经理，擅长根据简历和职位要求提出深刻的面试问题。"},
-            {"role": "user", "content": prompt_content}
-        ],
-        "stream": False
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-
+    prompt_content = f"请根据以下简历和职位描述，生成面试问题。\n\n职位描述:\n{job_description or '未提供'}\n\n简历文本:\n{resume_text}"
+    payload = {"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt_content}]}
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
     try:
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=100)
         response.raise_for_status()
-        result = response.json()
-        return result['choices'][0]['message']['content']
-    except requests.exceptions.RequestException as e:
-        print(f"请求 DeepSeek API 时出错: {e}")
+        return response.json()['choices'][0]['message']['content']
+    except requests.exceptions.Timeout:
+        return "调用AI模型时出错: 请求超时"
+    except Exception as e:
         return f"调用AI模型时出错: {str(e)}"
-    except (KeyError, IndexError) as e:
-        print(f"解析 DeepSeek API 响应时出错: {e}")
-        return "解析AI模型返回的数据时出错。"
 
 def extract_text_from_pdf(pdf_file):
     """从PDF文件流中提取文本。"""
     try:
-        pdf_reader = pdf.PdfReader(pdf_file)
         text = ""
+        pdf_reader = pdf.PdfReader(pdf_file)
         for page in pdf_reader.pages:
             text += page.extract_text() or ""
         return text
-    except Exception as e:
-        return f"读取PDF时出错: {str(e)}"
+    except Exception:
+        return "读取PDF时出错"
 
+# --- Main Execution ---
 if __name__ == '__main__':
+    # 在第一次运行前，确保数据库和表已创建
+    if not os.path.exists(DATABASE):
+        init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
