@@ -136,7 +136,11 @@
             padding: 0 20px;
             background: #fafcff;
         }
-        .history-item.active .history-content { max-height: 1000px; /* A large enough value */ padding: 20px; }
+        .history-item.active .history-content {
+            max-height: 400px; /* 关键修复：设置一个固定的最大高度 */
+            overflow-y: auto; /* 关键修复：允许垂直滚动 */
+            padding: 20px;
+        }
         .history-content p { margin: 0 0 10px 0; }
         .history-content ul { padding-left: 20px; }
     </style>
@@ -251,6 +255,13 @@
                 document.getElementById(elementId).textContent = message || '';
             };
 
+            // 关键修复：重置分析器状态的函数
+            const resetAnalyzerState = () => {
+                document.getElementById('resume-form').reset();
+                document.getElementById('results-container').classList.add('hidden');
+                document.getElementById('results').innerHTML = '';
+            };
+
             // --- Core Logic ---
             const checkAuth = async () => {
                 try {
@@ -353,7 +364,6 @@
                 }
             });
 
-            // 修正后的退出登录逻辑
             userAvatar.addEventListener('click', (e) => {
                 e.stopPropagation();
                 logoutBtn.classList.toggle('show');
@@ -361,10 +371,10 @@
 
             logoutBtn.addEventListener('click', async () => {
                 await fetch('/api/logout', { method: 'POST' });
+                resetAnalyzerState(); // 关键修复：退出时重置状态
                 checkAuth();
             });
 
-            // 点击页面其他地方隐藏退出按钮
             document.addEventListener('click', (e) => {
                 if (!userAvatar.contains(e.target) && !logoutBtn.contains(e.target)) {
                     logoutBtn.classList.remove('show');
