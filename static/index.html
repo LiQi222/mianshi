@@ -7,13 +7,14 @@
     <style>
         :root {
             --primary-color: #4A90E2;
+            --primary-light: #eaf2fc;
             --secondary-color: #50E3C2;
             --background-color: #f7f9fc;
             --text-color: #4a4a4a;
             --light-text-color: #9b9b9b;
             --container-bg: #ffffff;
             --border-color: #e6e6e6;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
         }
         body {
@@ -22,44 +23,30 @@
             color: var(--text-color);
             line-height: 1.7;
             margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 30px 40px;
         }
         .hidden { display: none !important; }
         
         /* 认证页面样式 */
+        .auth-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
         .auth-container {
+            width: 100%;
             max-width: 400px;
             background-color: var(--container-bg);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
+            padding: 40px;
+            box-sizing: border-box;
         }
         .auth-header { text-align: center; margin-bottom: 30px; }
         .auth-header h1 { font-size: 28px; color: var(--primary-color); }
-        .auth-form input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-        .auth-form button {
-            width: 100%;
-            padding: 14px;
-            background: var(--primary-color);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-        }
+        .auth-form input { width: 100%; padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; }
+        .auth-form button { width: 100%; padding: 14px; background: var(--primary-color); color: #fff; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
         .auth-form button:hover { background-color: #357ABD; }
         .auth-form button:active { transform: scale(0.98); }
         .auth-switch { text-align: center; margin-top: 20px; color: var(--light-text-color); }
@@ -69,162 +56,164 @@
         .validation-hint { font-size: 12px; color: var(--light-text-color); margin-top: -10px; margin-bottom: 15px; text-align: left; padding-left: 5px; }
 
         /* 主应用样式 */
+        #app-view { padding: 20px; }
         #app-header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        #app-header h1 { margin: 0; font-size: 24px; color: var(--text-color); }
-        #user-profile { display: flex; align-items: center; position: relative; }
-        #user-avatar {
-            width: 40px; height: 40px;
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
-        }
-        #logout-btn {
-            display: none;
-            position: absolute;
-            top: 50px; right: 0;
+            padding: 20px 30px;
             background-color: var(--container-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            white-space: nowrap;
-        }
-        #user-profile:hover #logout-btn { display: block; }
-
-        .main-content {
-            display: flex;
-            gap: 30px;
-        }
-        .panel {
-            flex: 1;
-            background: var(--container-bg);
-            padding: 30px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
-            min-width: 0;
         }
-        .panel h2 { margin-top: 0; font-size: 20px; }
-        
-        /* 左侧面板：分析器 */
-        #analyzer-section label { font-weight: 500; }
-        #analyzer-section button { margin-top: 10px; }
-        #results-container { margin-top: 20px; }
-
-        /* 右侧面板：历史记录 */
-        #history-section { max-height: 70vh; overflow-y: auto; }
-        #history-list { list-style-type: none; padding: 0; }
-        #history-list li {
-            background: #fdfdfd;
-            margin-bottom: 15px;
-            padding: 15px;
+        .logo { font-size: 24px; font-weight: bold; color: var(--primary-color); }
+        .main-nav button {
+            background: none;
+            border: 1px solid transparent;
+            font-size: 16px;
+            padding: 8px 16px;
+            margin: 0 5px;
             border-radius: 8px;
-            border: 1px solid var(--border-color);
-            transition: box-shadow 0.2s;
+            cursor: pointer;
+            transition: all 0.3s;
         }
-        #history-list li:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        #history-list .timestamp { font-size: 13px; color: var(--light-text-color); margin-bottom: 10px; }
-        #history-list .questions-content { font-size: 15px; }
-        #history-list .questions-content p { margin: 0 0 10px 0; }
-        #history-list .questions-content ul { padding-left: 20px; }
+        .main-nav button.active {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        #user-profile { display: flex; align-items: center; position: relative; }
+        #user-avatar { width: 40px; height: 40px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; }
+        #logout-btn { display: none; position: absolute; top: 50px; right: 0; background-color: var(--container-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 20px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); white-space: nowrap; z-index: 10; }
+        #user-profile:hover #logout-btn { display: block; }
+        
+        .page-content { max-width: 1200px; margin: 0 auto; }
+        .panel { background: var(--container-bg); padding: 30px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        .panel h2 { margin-top: 0; font-size: 22px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        
+        /* 分析器页面 */
+        #analyzer-view .form-group label { font-weight: 500; }
+        #analyzer-view button[type="submit"] { margin-top: 10px; }
+        #results-container { margin-top: 20px; padding: 20px; background-color: var(--primary-light); border-radius: 8px; }
+
+        /* 历史记录页面 */
+        #history-list { list-style-type: none; padding: 0; }
+        .history-item { margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .history-header:hover { background-color: #f9f9f9; }
+        .history-item.active .history-header { background-color: var(--primary-light); }
+        .history-header .timestamp { font-size: 14px; color: var(--light-text-color); }
+        .history-header .toggle-icon { font-size: 24px; font-weight: bold; transition: transform 0.3s; }
+        .history-item.active .toggle-icon { transform: rotate(45deg); }
+        .history-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding: 0 20px;
+            background: #fafcff;
+        }
+        .history-item.active .history-content { max-height: 1000px; /* A large enough value */ padding: 20px; }
+        .history-content p { margin: 0 0 10px 0; }
+        .history-content ul { padding-left: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- 登录/注册视图 -->
-    <div id="auth-view" class="container auth-container">
-        <!-- 登录 -->
-        <div id="login-form-container">
-            <div class="auth-header"><h1>欢迎回来</h1><p>登录以继续您的AI面试准备</p></div>
-            <form id="login-form" class="auth-form">
-                <div id="login-error" class="error-message"></div>
-                <input type="text" id="login-username" placeholder="用户名" required>
-                <input type="password" id="login-password" placeholder="密码" required>
-                <button type="submit">登 录</button>
-            </form>
-            <div class="auth-switch">还没有账户？ <a href="#" id="show-register-link" class="auth-link">立即注册</a></div>
-        </div>
-        <!-- 注册 -->
-        <div id="register-form-container" class="hidden">
-            <div class="auth-header"><h1>创建新账户</h1><p>开启您的个性化面试之旅</p></div>
-            <form id="register-form" class="auth-form">
-                <div id="register-error" class="error-message"></div>
-                <input type="text" id="register-username" placeholder="用户名" required>
-                <div class="validation-hint">5-10位，仅限英文字母和数字</div>
-                <input type="password" id="register-password" placeholder="密码" required>
-                <div class="validation-hint">6-18位，必须包含英文和数字</div>
-                <button type="submit">注 册</button>
-            </form>
-            <div class="auth-switch">已有账户？ <a href="#" id="show-login-link" class="auth-link">返回登录</a></div>
+    <!-- 认证视图 -->
+    <div id="auth-view" class="auth-wrapper">
+        <div class="auth-container">
+            <div id="login-form-container">
+                <div class="auth-header"><h1>欢迎回来</h1><p>登录以继续您的AI面试准备</p></div>
+                <form id="login-form" class="auth-form">
+                    <div id="login-error" class="error-message"></div>
+                    <input type="text" id="login-username" placeholder="用户名" required>
+                    <input type="password" id="login-password" placeholder="密码" required>
+                    <button type="submit">登 录</button>
+                </form>
+                <div class="auth-switch">还没有账户？ <a href="#" id="show-register-link" class="auth-link">立即注册</a></div>
+            </div>
+            <div id="register-form-container" class="hidden">
+                <div class="auth-header"><h1>创建新账户</h1><p>开启您的个性化面试之旅</p></div>
+                <form id="register-form" class="auth-form">
+                    <div id="register-error" class="error-message"></div>
+                    <input type="text" id="register-username" placeholder="用户名" required>
+                    <div class="validation-hint">5-10位，仅限英文字母和数字</div>
+                    <input type="password" id="register-password" placeholder="密码" required>
+                    <div class="validation-hint">6-18位，必须包含英文和数字</div>
+                    <button type="submit">注 册</button>
+                </form>
+                <div class="auth-switch">已有账户？ <a href="#" id="show-login-link" class="auth-link">返回登录</a></div>
+            </div>
         </div>
     </div>
 
     <!-- 主应用视图 -->
-    <div id="app-view" class="container hidden">
+    <div id="app-view" class="hidden">
         <header id="app-header">
-            <h1>AI 简历分析</h1>
+            <div class="logo">AI 面试官</div>
+            <nav class="main-nav">
+                <button id="nav-analyzer" class="active">问题分析</button>
+                <button id="nav-history">分析记录</button>
+            </nav>
             <div id="user-profile">
                 <div id="user-avatar"></div>
                 <button id="logout-btn">退出登录</button>
             </div>
         </header>
 
-        <main class="main-content">
-            <!-- 左侧：问题分析面板 -->
-            <section id="analyzer-section" class="panel">
-                <h2>问题分析</h2>
+        <main class="page-content">
+            <div id="analyzer-view" class="panel">
+                <h2>生成面试问题</h2>
                 <form id="resume-form">
-                     <div class="form-group">
-                        <label for="resume-file">上传您的简历 (PDF)</label>
-                        <input type="file" id="resume-file" name="resume" accept=".pdf" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="job-description">粘贴目标岗位描述 (可选)</label>
-                        <textarea id="job-description" name="jd" rows="6" placeholder="粘贴职位描述能让AI生成更具针对性的问题..."></textarea>
-                    </div>
-                    <button type="submit" id="submit-btn">✨ 生成面试问题</button>
+                     <div class="form-group"><label for="resume-file">上传您的简历 (PDF)</label><input type="file" id="resume-file" name="resume" accept=".pdf" required></div>
+                    <div class="form-group"><label for="job-description">粘贴目标岗位描述 (可选)</label><textarea id="job-description" name="jd" rows="6" placeholder="粘贴职位描述能让AI生成更具针对性的问题..."></textarea></div>
+                    <button type="submit" id="submit-btn">✨ 开始分析</button>
                 </form>
                 <div id="loading" class="hidden" style="text-align:center; padding: 40px 0;">AI分析中...</div>
-                <div id="results-container" class="hidden">
-                    <h3>💡 AI 生成的面试问题</h3>
-                    <div id="results"></div>
-                </div>
-            </section>
-
-            <!-- 右侧：历史记录面板 -->
-            <section id="history-section" class="panel">
-                <h2>分析记录</h2>
-                <ul id="history-list"><li>暂无记录</li></ul>
-            </section>
+                <div id="results-container" class="hidden"><h3>💡 AI 生成的面试问题</h3><div id="results"></div></div>
+            </div>
+            <div id="history-view" class="panel hidden">
+                <h2>您的分析记录</h2>
+                <ul id="history-list"></ul>
+            </div>
         </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const authView = document.getElementById('auth-view');
-            const loginContainer = document.getElementById('login-form-container');
-            const registerContainer = document.getElementById('register-form-container');
-            const appView = document.getElementById('app-view');
+            const views = {
+                auth: document.getElementById('auth-view'),
+                app: document.getElementById('app-view'),
+                login: document.getElementById('login-form-container'),
+                register: document.getElementById('register-form-container'),
+                analyzer: document.getElementById('analyzer-view'),
+                history: document.getElementById('history-view')
+            };
+
+            const navButtons = {
+                analyzer: document.getElementById('nav-analyzer'),
+                history: document.getElementById('nav-history')
+            };
 
             const showView = (view) => {
-                authView.classList.add('hidden');
-                appView.classList.add('hidden');
-                view.classList.remove('hidden');
+                Object.values(views).forEach(v => v.classList.add('hidden'));
+                if (view === views.app) {
+                    view.classList.remove('hidden');
+                    views.analyzer.classList.remove('hidden'); // 默认显示分析页
+                } else {
+                    view.classList.remove('hidden');
+                }
             };
             
             const showError = (elId, msg) => { document.getElementById(elId).textContent = msg || ''; };
@@ -236,14 +225,13 @@
                     const data = await response.json();
                     if (data.is_authenticated) {
                         document.getElementById('user-avatar').textContent = data.username.charAt(0).toUpperCase();
-                        showView(appView);
-                        loadHistory(); // 登录后自动加载历史记录
+                        showView(views.app);
                     } else {
-                        showView(authView);
+                        showView(views.auth);
                     }
                 } catch (error) {
                     console.error("Auth check failed:", error);
-                    showView(authView);
+                    showView(views.auth);
                 }
             };
 
@@ -260,8 +248,16 @@
                     } else {
                         data.forEach(item => {
                             const li = document.createElement('li');
+                            li.className = 'history-item';
                             const timestamp = new Date(item.timestamp).toLocaleString('zh-CN');
-                            li.innerHTML = `<div class="timestamp">${timestamp}</div><div class="questions-content">${marked.parse(item.questions)}</div>`;
+                            li.innerHTML = `
+                                <div class="history-header">
+                                    <span class="timestamp">${timestamp}</span>
+                                    <span class="toggle-icon">+</span>
+                                </div>
+                                <div class="history-content">
+                                    ${marked.parse(item.questions)}
+                                </div>`;
                             historyList.appendChild(li);
                         });
                     }
@@ -275,14 +271,14 @@
 
             document.getElementById('show-register-link').addEventListener('click', (e) => {
                 e.preventDefault();
-                loginContainer.classList.add('hidden');
-                registerContainer.classList.remove('hidden');
+                views.login.classList.add('hidden');
+                views.register.classList.remove('hidden');
             });
 
             document.getElementById('show-login-link').addEventListener('click', (e) => {
                 e.preventDefault();
-                registerContainer.classList.add('hidden');
-                loginContainer.classList.remove('hidden');
+                views.register.classList.add('hidden');
+                views.login.classList.remove('hidden');
             });
             
             document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -297,8 +293,8 @@
                 const data = await response.json();
                 if (response.ok) {
                     alert('注册成功！请登录。');
-                    registerContainer.classList.add('hidden');
-                    loginContainer.classList.remove('hidden');
+                    views.register.classList.add('hidden');
+                    views.login.classList.remove('hidden');
                     showError('register-error', '');
                 } else {
                     showError('register-error', data.error);
@@ -327,6 +323,30 @@
                 await fetch('/api/logout', { method: 'POST' });
                 checkAuth();
             });
+            
+            navButtons.analyzer.addEventListener('click', () => {
+                views.history.classList.add('hidden');
+                views.analyzer.classList.remove('hidden');
+                navButtons.history.classList.remove('active');
+                navButtons.analyzer.classList.add('active');
+            });
+
+            navButtons.history.addEventListener('click', () => {
+                views.analyzer.classList.add('hidden');
+                views.history.classList.remove('hidden');
+                navButtons.analyzer.classList.remove('active');
+                navButtons.history.classList.add('active');
+                loadHistory();
+            });
+            
+            // Accordion for history items
+            document.getElementById('history-list').addEventListener('click', (e) => {
+                const header = e.target.closest('.history-header');
+                if (header) {
+                    const item = header.parentElement;
+                    item.classList.toggle('active');
+                }
+            });
 
             document.getElementById('resume-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -348,7 +368,6 @@
                         resultsDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
                     } else {
                         resultsDiv.innerHTML = marked.parse(data.questions);
-                        loadHistory(); // 分析成功后刷新历史记录
                     }
                 } catch (error) {
                      resultsDiv.innerHTML = `<p style="color:red;">请求失败: ${error.message}</p>`;
