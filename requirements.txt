@@ -5,3 +5,4 @@ PyPDF2
 gunicorn
 Flask-Login
 werkzeug
+python-docx
