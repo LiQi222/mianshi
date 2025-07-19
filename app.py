@@ -25,9 +25,14 @@ def init_db():
     """初始化数据库，创建表"""
     with app.app_context():
         db = get_db()
-        with open('schema.sql', 'r') as f:
-            db.executescript(f.read())
-        db.commit()
+        # 确保 schema.sql 文件存在
+        if os.path.exists('schema.sql'):
+            with open('schema.sql', 'r') as f:
+                db.executescript(f.read())
+            db.commit()
+            print("Database initialized.")
+        else:
+            print("schema.sql not found, skipping DB initialization.")
 
 # --- User Authentication Setup (Flask-Login) ---
 login_manager = LoginManager()
@@ -186,8 +191,10 @@ def extract_text_from_pdf(pdf_file):
         return "读取PDF时出错"
 
 # --- Main Execution ---
+# 最终修复：将数据库初始化直接放在这里
+# 因为 schema.sql 使用 "CREATE TABLE IF NOT EXISTS", 所以每次启动都运行是安全的
+# 这确保了无论是在本地还是在Render上，数据库表总是存在的
+init_db()
+
 if __name__ == '__main__':
-    # 在第一次运行前，确保数据库和表已创建
-    if not os.path.exists(DATABASE):
-        init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
