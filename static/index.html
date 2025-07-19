@@ -5,87 +5,244 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 简历面试问题生成器</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
-        .container { width: 100%; max-width: 800px; margin: 0 auto; background-color: #ffffff; padding: 20px 40px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08); box-sizing: border-box; }
-        header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
-        h1 { color: #2c3e50; font-weight: 700; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 20px 40px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.08); }
+        .hidden { display: none !important; }
+        header, .auth-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        h1 { color: #2c3e50; }
         h2 { color: #34495e; border-left: 4px solid #3498db; padding-left: 15px; }
-        .form-group { margin-bottom: 25px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #555; }
-        input[type="file"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s, box-shadow 0.3s; }
-        button { display: block; width: 100%; padding: 15px; background: linear-gradient(45deg, #3498db, #2980b9); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); }
-        button:disabled { background: #bdc3c7; cursor: not-allowed; box-shadow: none; transform: none; }
-        #results-container { margin-top: 30px; padding: 20px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
-        .spinner-container { text-align: center; padding: 40px 0; color: #555; font-weight: 500; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        input[type="text"], input[type="password"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; }
+        button { display: block; width: 100%; padding: 15px; background: #3498db; color: #fff; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover { background-color: #2980b9; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav-btn, .auth-link { background: none; border: none; color: #3498db; cursor: pointer; font-size: 16px; margin: 0 10px; padding: 5px; }
+        .nav-btn:hover, .auth-link:hover { text-decoration: underline; }
+        #user-info { float: right; margin-top: -50px; }
+        #history-list { list-style-type: none; padding: 0; }
+        #history-list li { background: #f8f9fa; margin-bottom: 15px; padding: 15px; border-radius: 8px; border-left: 3px solid #1abc9c; }
+        #history-list .timestamp { font-size: 0.8em; color: #7f8c8d; display: block; margin-bottom: 10px; }
+        #error-message { color: red; text-align: center; margin-bottom: 15px; }
     </style>
 </head>
 <body>
+
+    <!-- 主容器 -->
     <div class="container">
-        <header>
-            <h1>🤖简历面试问题生成器</h1>
-            <p>上传简历和目标职位，为您量身打造面试问题。</p>
-        </header>
-        <form id="resume-form">
-            <div class="form-group">
-                <label for="resume-file">1. 上传您的简历 (仅支持PDF格式)</label>
-                <input type="file" id="resume-file" name="resume" accept=".pdf" required>
-            </div>
-            <div class="form-group">
-                <label for="job-description">2. (可选) 粘贴目标岗位描述</label>
-                <textarea id="job-description" name="jd" rows="8" placeholder="将职位描述粘贴到这里，可以生成更具针对性的问题..."></textarea>
-            </div>
-            <button type="submit" id="submit-btn">✨ 生成面试问题</button>
-        </form>
-        <div id="loading" class="spinner-container" style="display: none;">
-            <div class="spinner"></div>
-            <p>AI 正在深度分析您的简历，请稍候...</p>
+
+        <!-- 登录视图 -->
+        <div id="login-view">
+            <div class="auth-header"><h1>欢迎回来</h1></div>
+            <div id="login-error" class="error-message"></div>
+            <form id="login-form">
+                <input type="text" id="login-username" placeholder="用户名" required>
+                <input type="password" id="login-password" placeholder="密码" required>
+                <button type="submit">登录</button>
+            </form>
+            <p style="text-align:center; margin-top: 20px;">
+                还没有账户？ <a href="#" id="show-register-link" class="auth-link">立即注册</a>
+            </p>
         </div>
-        <div id="results-container" style="display: none;">
-            <h2>💡 AI 生成的面试问题</h2>
-            <div id="results"></div>
+
+        <!-- 注册视图 -->
+        <div id="register-view" class="hidden">
+            <div class="auth-header"><h1>创建新账户</h1></div>
+            <div id="register-error" class="error-message"></div>
+            <form id="register-form">
+                <input type="text" id="register-username" placeholder="用户名" required>
+                <input type="password" id="register-password" placeholder="密码" required>
+                <button type="submit">注册</button>
+            </form>
+            <p style="text-align:center; margin-top: 20px;">
+                已有账户？ <a href="#" id="show-login-link" class="auth-link">返回登录</a>
+            </p>
+        </div>
+
+        <!-- 主应用视图 -->
+        <div id="app-view" class="hidden">
+            <div id="user-info">
+                欢迎, <span id="username-display"></span>! 
+                <button id="logout-btn" class="nav-btn">退出登录</button>
+            </div>
+            <header>
+                <h1>🤖 AI 简历分析</h1>
+                <div class="nav">
+                    <button id="show-analyzer-btn" class="nav-btn">开始分析</button>
+                    <button id="show-history-btn" class="nav-btn">历史记录</button>
+                </div>
+            </header>
+
+            <!-- 分析器界面 -->
+            <div id="analyzer-section">
+                <form id="resume-form">
+                    <div class="form-group">
+                        <label for="resume-file">1. 上传您的简历 (PDF)</label>
+                        <input type="file" id="resume-file" name="resume" accept=".pdf" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="job-description">2. (可选) 粘贴目标岗位描述</label>
+                        <textarea id="job-description" name="jd" rows="8" placeholder="粘贴职位描述..."></textarea>
+                    </div>
+                    <button type="submit" id="submit-btn">✨ 生成面试问题</button>
+                </form>
+                <div id="loading" class="hidden" style="text-align:center; padding: 40px 0;">AI分析中...</div>
+                <div id="results-container" class="hidden">
+                    <h2>💡 AI 生成的面试问题</h2>
+                    <div id="results"></div>
+                </div>
+            </div>
+
+            <!-- 历史记录界面 -->
+            <div id="history-section" class="hidden">
+                <h2>📜 您的历史记录</h2>
+                <ul id="history-list"></ul>
+            </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('resume-form');
-            const submitBtn = document.getElementById('submit-btn');
-            const loadingSpinner = document.getElementById('loading');
+        // 全局DOM元素
+        const loginView = document.getElementById('login-view');
+        const registerView = document.getElementById('register-view');
+        const appView = document.getElementById('app-view');
+        const analyzerSection = document.getElementById('analyzer-section');
+        const historySection = document.getElementById('history-section');
+
+        // 切换视图的函数
+        const showView = (viewToShow) => {
+            [loginView, registerView, appView].forEach(view => view.classList.add('hidden'));
+            viewToShow.classList.remove('hidden');
+        };
+        
+        // 显示错误信息
+        const showError = (elementId, message) => {
+            const errorEl = document.getElementById(elementId);
+            errorEl.textContent = message || '';
+        };
+
+        // 检查认证状态
+        const checkAuth = async () => {
+            const response = await fetch('/api/check_auth');
+            const data = await response.json();
+            if (data.is_authenticated) {
+                document.getElementById('username-display').textContent = data.username;
+                showView(appView);
+            } else {
+                showView(loginView);
+            }
+        };
+
+        // --- 事件监听 ---
+
+        // 页面加载时检查登录状态
+        document.addEventListener('DOMContentLoaded', checkAuth);
+
+        // 切换到注册视图
+        document.getElementById('show-register-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showView(registerView);
+        });
+
+        // 切换到登录视图
+        document.getElementById('show-login-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showView(loginView);
+        });
+        
+        // 注册表单提交
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('注册成功！请登录。');
+                showView(loginView);
+                showError('register-error', '');
+            } else {
+                showError('register-error', data.error);
+            }
+        });
+
+        // 登录表单提交
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('username-display').textContent = data.username;
+                showView(appView);
+                showError('login-error', '');
+            } else {
+                showError('login-error', data.error);
+            }
+        });
+
+        // 退出登录
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            showView(loginView);
+        });
+
+        // 显示分析器界面
+        document.getElementById('show-analyzer-btn').addEventListener('click', () => {
+            analyzerSection.classList.remove('hidden');
+            historySection.classList.add('hidden');
+        });
+
+        // 显示历史记录界面
+        document.getElementById('show-history-btn').addEventListener('click', async () => {
+            analyzerSection.classList.add('hidden');
+            historySection.classList.remove('hidden');
+            const response = await fetch('/api/history');
+            const data = await response.json();
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+            if (data.length === 0) {
+                historyList.innerHTML = '<li>没有历史记录。</li>';
+            } else {
+                data.forEach(item => {
+                    const li = document.createElement('li');
+                    const timestamp = new Date(item.timestamp).toLocaleString();
+                    li.innerHTML = `<span class="timestamp">${timestamp}</span><div>${marked.parse(item.questions)}</div>`;
+                    historyList.appendChild(li);
+                });
+            }
+        });
+
+        // 分析表单提交
+        document.getElementById('resume-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const loading = document.getElementById('loading');
             const resultsContainer = document.getElementById('results-container');
             const resultsDiv = document.getElementById('results');
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const resumeFile = document.getElementById('resume-file').files[0];
-                const jobDescription = document.getElementById('job-description').value;
-                if (!resumeFile) { alert('请先上传您的简历文件。'); return; }
-                submitBtn.disabled = true;
-                submitBtn.innerText = "分析中...";
-                loadingSpinner.style.display = 'block';
-                resultsContainer.style.display = 'none';
-                const formData = new FormData();
-                formData.append('resume', resumeFile);
-                formData.append('jd', jobDescription);
-                try {
-                    // 请求地址无需修改，依然是相对路径
-                    const response = await fetch('/analyze', { method: 'POST', body: formData });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || '服务器发生未知错误');
-                    }
-                    const data = await response.json();
-                    resultsDiv.innerHTML = marked.parse(data.questions);
-                    resultsContainer.style.display = 'block';
-                } catch (error) {
-                    resultsDiv.innerHTML = `<p style="color: #ea3535; font-weight: bold;">发生错误: ${error.message}</p><p>请检查您的Python后端服务是否已正确运行，并且API密钥已配置。</p>`;
-                    resultsContainer.style.display = 'block';
-                } finally {
-                    loadingSpinner.style.display = 'none';
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = "✨ 生成面试问题";
-                }
-            });
+            
+            loading.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+
+            const formData = new FormData(e.target);
+            const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+            const data = await response.json();
+            
+            loading.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            if (data.error) {
+                resultsDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            } else {
+                resultsDiv.innerHTML = marked.parse(data.questions);
+            }
         });
     </script>
 </body>
