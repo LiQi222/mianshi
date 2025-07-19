@@ -3,3 +3,5 @@ Flask-Cors
 requests
 PyPDF2
 gunicorn
+Flask-Login
+werkzeug
