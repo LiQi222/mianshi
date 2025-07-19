@@ -1,29 +1,28 @@
 import os
 import sqlite3
-import re # 引入正则表达式模块
-from flask import Flask, request, jsonify, send_from_directory
+import re
+import io
+from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, url_for
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import PyPDF2 as pdf
+from docx import Document
 
 # --- App & DB Setup ---
 app = Flask(__name__, static_folder='static')
-app.config['SECRET_KEY'] = os.urandom(24) # 用于保护会话的密钥
+app.config['SECRET_KEY'] = os.urandom(24)
 CORS(app)
 
-# 数据库文件路径
 DATABASE = 'database.db'
 
 def get_db():
-    """连接到数据库"""
     db = sqlite3.connect(DATABASE)
     db.row_factory = sqlite3.Row
     return db
 
 def init_db():
-    """初始化数据库，创建表"""
     with app.app_context():
         db = get_db()
         if os.path.exists('schema.sql'):
@@ -31,22 +30,19 @@ def init_db():
                 db.executescript(f.read())
             db.commit()
             print("Database initialized.")
-        else:
-            print("schema.sql not found, skipping DB initialization.")
 
-# --- User Authentication Setup (Flask-Login) ---
+# --- User Authentication Setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
+login_manager.login_view = 'login_page'
 
 class User(UserMixin):
-    """用户模型"""
     def __init__(self, id, username):
         self.id = id
         self.username = username
 
 @login_manager.user_loader
 def load_user(user_id):
-    """加载用户"""
     db = get_db()
     user_row = db.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     db.close()
@@ -64,8 +60,24 @@ except Exception as e:
 
 # --- Frontend & Static Routes ---
 @app.route('/')
+@login_required
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/login')
+def login_page():
+    if current_user.is_authenticated:
+        return redirect(url_for('serve_index'))
+    return send_from_directory(app.static_folder, 'login.html')
+
+# --- 新增：协议页面路由 ---
+@app.route('/agreement')
+def agreement_page():
+    return send_from_directory(app.static_folder, 'agreement.html')
+
+@app.route('/privacy')
+def privacy_page():
+    return send_from_directory(app.static_folder, 'privacy.html')
 
 # --- API Routes ---
 @app.route('/api/register', methods=['POST'])
@@ -74,15 +86,8 @@ def register():
     username = data.get('username')
     password = data.get('password')
 
-    # --- 新增的服务器端验证逻辑 ---
-    if not username or not password:
-        return jsonify({"error": "用户名和密码不能为空"}), 400
-    
-    # 用户名验证: 5-10位，只能是英文字母或数字
     if not re.match(r'^[a-zA-Z0-9]{5,10}$', username):
         return jsonify({"error": "用户名必须是5-10位的英文字母或数字"}), 400
-        
-    # 密码验证: 6-18位，必须包含英文和数字
     if not re.match(r'^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,18}$', password):
         return jsonify({"error": "密码必须是6-18位，且同时包含英文和数字"}), 400
 
@@ -102,16 +107,13 @@ def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    
     db = get_db()
     user_row = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     db.close()
-
     if user_row and check_password_hash(user_row['password'], password):
         user = User(id=user_row['id'], username=user_row['username'])
         login_user(user)
-        return jsonify({"success": "登录成功", "username": user.username})
-    
+        return jsonify({"success": "登录成功"})
     return jsonify({"error": "用户名或密码错误"}), 401
 
 @app.route('/api/logout', methods=['POST'])
@@ -142,39 +144,48 @@ def get_history():
 @login_required
 def analyze_resume():
     try:
-        if 'resume' not in request.files:
-            return jsonify({"error": "没有找到简历文件"}), 400
-        
+        if 'resume' not in request.files: return jsonify({"error": "没有找到简历文件"}), 400
         resume_file = request.files['resume']
         job_description = request.form.get('jd', '')
-
-        if resume_file.filename == '':
-            return jsonify({"error": "未选择文件"}), 400
+        if resume_file.filename == '': return jsonify({"error": "未选择文件"}), 400
         
         resume_text = extract_text_from_pdf(resume_file.stream)
-        if "读取PDF时出错" in resume_text:
-            return jsonify({"error": resume_text}), 500
+        if "读取PDF时出错" in resume_text: return jsonify({"error": resume_text}), 500
         
         generated_questions = get_deepseek_response(resume_text, job_description)
-        
         if "调用AI模型时出错" in generated_questions or "解析AI模型返回的数据时出错" in generated_questions:
              return jsonify({"error": generated_questions}), 500
 
-        # 保存到历史记录
         db = get_db()
         db.execute('INSERT INTO history (user_id, questions) VALUES (?, ?)', (current_user.id, generated_questions))
         db.commit()
         db.close()
 
         return jsonify({"questions": generated_questions})
-
     except Exception as e:
         print(f"在 /analyze 端点发生严重错误: {e}")
         return jsonify({"error": "服务器内部发生严重错误"}), 500
 
+@app.route('/api/download_word', methods=['POST'])
+@login_required
+def download_word():
+    data = request.get_json()
+    content = data.get('content', '')
+    document = Document()
+    document.add_heading('AI生成的面试问题', 0)
+    for line in content.split('\n'):
+        if line.startswith('### '): document.add_heading(line.replace('### ', ''), level=3)
+        elif line.startswith('## '): document.add_heading(line.replace('## ', ''), level=2)
+        elif line.startswith('# '): document.add_heading(line.replace('# ', ''), level=1)
+        elif line.strip().startswith('* '): document.add_paragraph(line.replace('* ', '').strip(), style='List Bullet')
+        elif line.strip(): document.add_paragraph(line)
+    f = io.BytesIO()
+    document.save(f)
+    f.seek(0)
+    return send_file(f, as_attachment=True, download_name='面试问题.docx', mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+
 # --- Helper Functions ---
 def get_deepseek_response(resume_text, job_description):
-    """调用 DeepSeek API 模型生成面试问题。"""
     url = "https://api.deepseek.com/chat/completions"
     prompt_content = f"请根据以下简历和职位描述，生成面试问题。\n\n职位描述:\n{job_description or '未提供'}\n\n简历文本:\n{resume_text}"
     payload = {"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt_content}]}
@@ -183,13 +194,10 @@ def get_deepseek_response(resume_text, job_description):
         response = requests.post(url, headers=headers, json=payload, timeout=100)
         response.raise_for_status()
         return response.json()['choices'][0]['message']['content']
-    except requests.exceptions.Timeout:
-        return "调用AI模型时出错: 请求超时"
     except Exception as e:
         return f"调用AI模型时出错: {str(e)}"
 
 def extract_text_from_pdf(pdf_file):
-    """从PDF文件流中提取文本。"""
     try:
         text = ""
         pdf_reader = pdf.PdfReader(pdf_file)
