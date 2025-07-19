@@ -2,7 +2,7 @@ import os
 import sqlite3
 import re
 import io
-from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, url_for
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -34,7 +34,6 @@ def init_db():
 # --- User Authentication Setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login_page'
 
 class User(UserMixin):
     def __init__(self, id, username):
@@ -60,17 +59,9 @@ except Exception as e:
 
 # --- Frontend & Static Routes ---
 @app.route('/')
-@login_required
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/login')
-def login_page():
-    if current_user.is_authenticated:
-        return redirect(url_for('serve_index'))
-    return send_from_directory(app.static_folder, 'login.html')
-
-# --- 新增：协议页面路由 ---
 @app.route('/agreement')
 def agreement_page():
     return send_from_directory(app.static_folder, 'agreement.html')
@@ -113,7 +104,7 @@ def login():
     if user_row and check_password_hash(user_row['password'], password):
         user = User(id=user_row['id'], username=user_row['username'])
         login_user(user)
-        return jsonify({"success": "登录成功"})
+        return jsonify({"success": "登录成功", "username": user.username})
     return jsonify({"error": "用户名或密码错误"}), 401
 
 @app.route('/api/logout', methods=['POST'])
@@ -129,7 +120,7 @@ def check_auth():
     return jsonify({"is_authenticated": False})
 
 @app.route('/api/history')
-@login_required
+@login_required # 只有登录用户可以获取历史
 def get_history():
     db = get_db()
     history_rows = db.execute(
@@ -140,9 +131,9 @@ def get_history():
     history = [{"questions": row['questions'], "timestamp": row['timestamp']} for row in history_rows]
     return jsonify(history)
 
+# --- 核心功能路由更新 ---
 @app.route('/api/analyze', methods=['POST'])
-@login_required
-def analyze_resume():
+def analyze_resume(): # 不再需要 @login_required
     try:
         if 'resume' not in request.files: return jsonify({"error": "没有找到简历文件"}), 400
         resume_file = request.files['resume']
@@ -156,32 +147,39 @@ def analyze_resume():
         if "调用AI模型时出错" in generated_questions or "解析AI模型返回的数据时出错" in generated_questions:
              return jsonify({"error": generated_questions}), 500
 
-        db = get_db()
-        db.execute('INSERT INTO history (user_id, questions) VALUES (?, ?)', (current_user.id, generated_questions))
-        db.commit()
-        db.close()
+        # 如果用户已登录，则保存历史记录
+        if current_user.is_authenticated:
+            db = get_db()
+            db.execute('INSERT INTO history (user_id, questions) VALUES (?, ?)', (current_user.id, generated_questions))
+            db.commit()
+            db.close()
 
         return jsonify({"questions": generated_questions})
     except Exception as e:
         print(f"在 /analyze 端点发生严重错误: {e}")
         return jsonify({"error": "服务器内部发生严重错误"}), 500
 
+# --- 新增：下载Word文档路由 ---
 @app.route('/api/download_word', methods=['POST'])
-@login_required
+@login_required # 只有登录用户可以下载
 def download_word():
     data = request.get_json()
     content = data.get('content', '')
+    
     document = Document()
     document.add_heading('AI生成的面试问题', 0)
+    
     for line in content.split('\n'):
         if line.startswith('### '): document.add_heading(line.replace('### ', ''), level=3)
         elif line.startswith('## '): document.add_heading(line.replace('## ', ''), level=2)
         elif line.startswith('# '): document.add_heading(line.replace('# ', ''), level=1)
         elif line.strip().startswith('* '): document.add_paragraph(line.replace('* ', '').strip(), style='List Bullet')
         elif line.strip(): document.add_paragraph(line)
+    
     f = io.BytesIO()
     document.save(f)
     f.seek(0)
+    
     return send_file(f, as_attachment=True, download_name='面试问题.docx', mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
 # --- Helper Functions ---
